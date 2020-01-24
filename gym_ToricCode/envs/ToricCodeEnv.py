@@ -76,7 +76,7 @@ class ToricCodeEnv(gym.Env):
 
         return - a reset state.
         """
-        terminal_state = False
+        terminal_state = self.isTerminalState(self.state)
 
         qubit_matrix = np.zeros((2, self.system_size, self.system_size), dtype=int)
 
