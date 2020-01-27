@@ -20,7 +20,6 @@ class ToricCodeEnv(gym.Env):
 
     Action = namedtuple('Action', ['position', 'action'])
 
-    
     metadata = {'render.modes': ['human']}
     
     def __init__(self, size=3, min_qbit_errors=0, p_error=0.1):
@@ -32,8 +31,8 @@ class ToricCodeEnv(gym.Env):
         # that is avaliable for the agent
         self.plaquette_matrix   = np.zeros((self.system_size, self.system_size), dtype=int)   # dont use self.plaquette
         self.vertex_matrix      = np.zeros((self.system_size, self.system_size), dtype=int)      # dont use self.vertex 
-        # qubit_matrix contains the true errors and shuld not be 
-        # avaliable for for an agent
+
+        # qubit_matrix contains the true errors and shuld not be avaliable for for an agent
         self.qubit_matrix       = np.zeros((2, self.system_size, self.system_size), dtype=int)
 
         self.state              = np.stack((self.vertex_matrix, self.plaquette_matrix,), axis=0)
@@ -67,7 +66,7 @@ class ToricCodeEnv(gym.Env):
         self.syndrom('next_state')
         
         reward = self.get_reward()
-        self.state = self.next_state                                                               #not sure about this previously done in training loop
+        self.state = self.next_state 
         return self.state, reward, self.isTerminalState(self.state), {} 
        
         
