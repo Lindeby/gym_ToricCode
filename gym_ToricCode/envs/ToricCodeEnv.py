@@ -1,6 +1,6 @@
 import gym
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from collections import namedtuple
 
 class ToricCodeEnv(gym.Env):
@@ -245,6 +245,75 @@ class ToricCodeEnv(gym.Env):
             elif state == 'next_state':
                 self.next_state = np.stack((vertex_matrix, plaquette_matrix), axis=0)
     # Not important now
+
+    def plot_toric_code(self, state, title):
+        x_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 1)
+        y_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 2)
+        z_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 3)
+
+        x_error_qubits2 = np.where(self.qubit_matrix[1,:,:] == 1)
+        y_error_qubits2 = np.where(self.qubit_matrix[1,:,:] == 2)
+        z_error_qubits2 = np.where(self.qubit_matrix[1,:,:] == 3)
+
+        vertex_matrix = state[0,:,:]
+        plaquette_matrix = state[1,:,:]
+        vertex_defect_coordinates = np.where(vertex_matrix)
+        plaquette_defect_coordinates = np.where(plaquette_matrix)
+
+        #xLine = np.linspace(0, self.system_size-0.5, self.system_size)
+        xLine = np.linspace(0, self.system_size, self.system_size)
+        x = range(self.system_size)
+        X, Y = np.meshgrid(x,x)
+        XLine, YLine = np.meshgrid(x, xLine)
+
+        markersize_qubit = 15
+        markersize_excitation = 7
+        markersize_symbols = 7
+        linewidth = 2
+
+        ax = plt.subplot(111)
+        ax.plot(XLine, -YLine, 'black', linewidth=linewidth)
+        ax.plot(YLine, -XLine, 'black', linewidth=linewidth)
+        
+        # add the last two black lines 
+        ax.plot(XLine[:,-1] + 1.0, -YLine[:,-1], 'black', linewidth=linewidth)
+        ax.plot(YLine[:,-1], -YLine[-1,:], 'black', linewidth=linewidth)
+
+        ax.plot(X + 0.5, -Y, 'o', color = 'black', markerfacecolor = 'white', markersize=markersize_qubit+1)
+        ax.plot(X, -Y -0.5, 'o', color = 'black', markerfacecolor = 'white', markersize=markersize_qubit+1)
+        # add grey qubits
+        ax.plot(X[-1,:] + 0.5, -Y[-1,:] - 1.0, 'o', color = 'black', markerfacecolor = 'grey', markersize=markersize_qubit+1)
+        ax.plot(X[:,-1] + 1.0, -Y[:,-1] - 0.5, 'o', color = 'black', markerfacecolor = 'grey', markersize=markersize_qubit+1)
+        
+        # all x errors 
+        ax.plot(x_error_qubits1[1], -x_error_qubits1[0] - 0.5, 'o', color = 'r', label="x error", markersize=markersize_qubit)
+        ax.plot(x_error_qubits2[1] + 0.5, -x_error_qubits2[0], 'o', color = 'r', markersize=markersize_qubit)
+        ax.plot(x_error_qubits1[1], -x_error_qubits1[0] - 0.5, 'o', color = 'black', markersize=markersize_symbols, marker=r'$X$')    
+        ax.plot(x_error_qubits2[1] + 0.5, -x_error_qubits2[0], 'o', color = 'black', markersize=markersize_symbols, marker=r'$X$')
+
+        # all y errors
+        ax.plot(y_error_qubits1[1], -y_error_qubits1[0] - 0.5, 'o', color = 'blueviolet', label="y error", markersize=markersize_qubit)
+        ax.plot(y_error_qubits2[1] + 0.5, -y_error_qubits2[0], 'o', color = 'blueviolet', markersize=markersize_qubit)
+        ax.plot(y_error_qubits1[1], -y_error_qubits1[0] - 0.5, 'o', color = 'black', markersize=markersize_symbols, marker=r'$Y$')
+        ax.plot(y_error_qubits2[1] + 0.5, -y_error_qubits2[0], 'o', color = 'black', markersize=markersize_symbols, marker=r'$Y$')
+
+        # all z errors 
+        ax.plot(z_error_qubits1[1], -z_error_qubits1[0] - 0.5, 'o', color = 'b', label="z error", markersize=markersize_qubit)
+        ax.plot(z_error_qubits2[1] + 0.5, -z_error_qubits2[0], 'o', color = 'b', markersize=markersize_qubit)
+        ax.plot(z_error_qubits1[1], -z_error_qubits1[0] - 0.5, 'o', color = 'black', markersize=markersize_symbols, marker=r'$Z$')
+        ax.plot(z_error_qubits2[1] + 0.5, -z_error_qubits2[0], 'o', color = 'black', markersize=markersize_symbols  , marker=r'$Z$')
+
+
+        #ax.plot(vertex_defect_coordinates[1], -vertex_defect_coordinates[0], 'x', color = 'blue', label="charge", markersize=markersize_excitation)
+        ax.plot(vertex_defect_coordinates[1], -vertex_defect_coordinates[0], 'o', color = 'blue', label="charge", markersize=markersize_excitation)
+        ax.plot(plaquette_defect_coordinates[1] + 0.5, -plaquette_defect_coordinates[0] - 0.5, 'o', color = 'red', label="flux", markersize=markersize_excitation)
+        ax.axis('off')
+        
+        #plt.title(title)
+        plt.axis('equal')
+        plt.savefig('plots/graph_'+str(title)+'.png')
+        plt.close()
+
     def render(self, mode='human'):
         pass
 
