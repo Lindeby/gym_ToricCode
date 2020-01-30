@@ -1,1 +1,1 @@
-from gym_ToricCode.envs.ToricCodeEnv import ToricCodeEnv
+from gym_ToricCode.envs.ToricCode import ToricCode
