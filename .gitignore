@@ -5,3 +5,5 @@
 *~
 .vscode
 /plots
+Pipefile
+Pipefile.lock
