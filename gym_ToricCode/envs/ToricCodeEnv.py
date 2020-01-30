@@ -22,10 +22,10 @@ class ToricCodeEnv(gym.Env):
 
     metadata = {'render.modes': ['human']}
     
-    def __init__(self, size=3, min_qbit_errors=0, p_error=0.1):
-        self.system_size = size
-        self.min_qbit_errors = min_qbit_errors
-        self.p_error = p_error
+    def __init__(self, config):
+        self.system_size = if config["size"] : config["size"] else: 3
+        self.min_qbit_errors = if config["min_qbit_errors"] : config["min_qbit_errors"] else: 0
+        self.p_error = if config["p_error"] : config["p_error"] else: 0.1
         
         # plaquette_matrix and vertex_matrix combinded beckomes the state
         # that is avaliable for the agent
