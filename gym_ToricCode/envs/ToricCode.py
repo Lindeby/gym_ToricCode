@@ -2,7 +2,7 @@ import gym
 import numpy as np
 import matplotlib.pyplot as plt
 
-class ToricCodeEnv(gym.Env):
+class ToricCode(gym.Env):
     """
     Description:
 
