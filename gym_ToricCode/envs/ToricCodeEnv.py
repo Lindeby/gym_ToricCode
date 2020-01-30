@@ -1,8 +1,6 @@
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
-from collections import namedtuple
-# from gym import spaces
 
 class ToricCodeEnv(gym.Env):
     """
@@ -19,17 +17,24 @@ class ToricCodeEnv(gym.Env):
 
     """
 
-    Action = namedtuple('Action', ['position', 'action'])
-
     metadata = {'render.modes': ['human']}
     
     def __init__(self, config):
+        """ Init method
 
+        Parameters
+        =============
+        config: a dictionary containing configuration parmeters
+        config {
+            size: An integer describing the size of the toric code.
+            min_qbit_errors: An integer describing the minium number of qubit errors on the code. 
+            p_error: The probability of generating an error on the toric code. 
+        }
+        """
 
         self.system_size = config["size"] if "size" in config else 3
         self.min_qbit_errors = config["min_qbit_errors"] if "min_qbit_errors" in config else 0
         self.p_error = config["p_error"] if "p_error" in config else 0.1
-
 
         low = np.array([0,0,0,0])
         high = np.array([1, self.system_size,self.system_size, 4])
@@ -52,7 +57,16 @@ class ToricCodeEnv(gym.Env):
 
 
     def step(self, action):
-        """Returns Observation(object), reward(float), done(bolean), info(dict)"""
+        """ Applies a pauli operator to the toric grid.
+
+        Parameters
+        =============
+        action: numpy array [matrix, posx, posy, operator] 
+        
+        Returns
+        =============
+        numpy array with corresponing syndrom for the errors.
+        """
 
         qubit_matrix = action[0]
         row = action[1]
@@ -73,7 +87,9 @@ class ToricCodeEnv(gym.Env):
     def reset(self):
         """Resets the environment and generates new errors.
 
-        return - a reset state.
+        Returns
+        =============
+        numpy array with corresponing syndrom for the errors.
         """
         terminal_state = self.isTerminalState(self.state)
 
@@ -96,10 +112,15 @@ class ToricCodeEnv(gym.Env):
 
     def generateRandomError(self, matrix, p_error):
         """Generates errors with a probability.
-        np matrix - a (2,x,x) numpy matrix the to generate errors on.
-        double p_error - the probability to generate an error 
+
+        Parameters
+        =============
+        matrix: (2,n,n) numpy matrix the to generate errors on.
+        p_error: the probability to generate an error.
         
-        return - the error matrix
+        Return
+        =============
+        The input matrix with newly generated errors.
         """
         for i in range(2):
             qubits = np.random.uniform(0, 1, size=(matrix.shape[1], matrix.shape[2]))
@@ -244,7 +265,6 @@ class ToricCodeEnv(gym.Env):
             elif state == 'next_state':
                 self.next_state = np.stack((vertex_matrix, plaquette_matrix), axis=0)
     
-
     def plotToricCode(self, state, title):
         x_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 1)
         y_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 2)
