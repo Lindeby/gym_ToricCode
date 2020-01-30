@@ -2,6 +2,7 @@ import gym
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import namedtuple
+# from gym import spaces
 
 class ToricCodeEnv(gym.Env):
     """
@@ -23,10 +24,18 @@ class ToricCodeEnv(gym.Env):
     metadata = {'render.modes': ['human']}
     
     def __init__(self, config):
-        self.system_size = if config["size"] : config["size"] else: 3
-        self.min_qbit_errors = if config["min_qbit_errors"] : config["min_qbit_errors"] else: 0
-        self.p_error = if config["p_error"] : config["p_error"] else: 0.1
-        
+
+
+        self.system_size = config["size"] if "size" in config else 3
+        self.min_qbit_errors = config["min_qbit_errors"] if "min_qbit_errors" in config else 0
+        self.p_error = config["p_error"] if "p_error" in config else 0.1
+
+
+        low = np.array([0,0,0,0])
+        high = np.array([1, self.system_size,self.system_size, 4])
+        self.action_space       = gym.spaces.Box(low, high)#gym.spaces.Tuple([gym.spaces.Box(np.array([0,0,0]), np.array([1, self.system_size, self.system_size])), gym.spaces.Discrete(4)])
+        self.observation_space  = gym.spaces.Box(0, 1, [2, self.system_size, self.system_size])
+
         # plaquette_matrix and vertex_matrix combinded beckomes the state
         # that is avaliable for the agent
         self.plaquette_matrix   = np.zeros((self.system_size, self.system_size), dtype=int)   # dont use self.plaquette
@@ -34,39 +43,30 @@ class ToricCodeEnv(gym.Env):
 
         # qubit_matrix contains the true errors and shuld not be avaliable for for an agent
         self.qubit_matrix       = np.zeros((2, self.system_size, self.system_size), dtype=int)
-
         self.state              = np.stack((self.vertex_matrix, self.plaquette_matrix,), axis=0)
         self.next_state         = np.stack((self.vertex_matrix, self.plaquette_matrix), axis=0)
 
         self.rule_table = np.array(([[0,1,2,3],[1,0,3,2],[2,3,0,1],[3,2,1,0]]), dtype=int)  # Identity = 0, pauli_x = 1, pauli_y = 2, pauli_z = 3
 
         self.ground_state = True    # True: only trivial loops, False: non trivial loop 
-        # self.terminal_state = False
 
 
     def step(self, action):
         """Returns Observation(object), reward(float), done(bolean), info(dict)"""
 
-        # Observation <-- currentstate
-        
-        # Reward <-- getReward
-
-        # Done <-- Terminal State ?= 1 False ow True
-
-        # info <-- nothing for now 
-        
-        qubit_matrix = action.position[0]
-        row = action.position[1]
-        col = action.position[2]
-        add_operator = action.action
+        qubit_matrix = action[0]
+        row = action[1]
+        col = action[2]
+        add_operator = action[3]
 
         old_operator = self.qubit_matrix[qubit_matrix, row, col]
         new_operator = self.rule_table[int(old_operator), int(add_operator)]
         self.qubit_matrix[qubit_matrix, row, col] = new_operator        
         self.syndrom('next_state')
         
-        reward = self.get_reward()
+        reward = self.getReward()
         self.state = self.next_state 
+
         return self.state, reward, self.isTerminalState(self.state), {} 
        
         
@@ -185,7 +185,7 @@ class ToricCodeEnv(gym.Env):
 
         return np.stack((vertex_matrix, plaquette_matrix), axis=0)
 
-    def get_reward(self):
+    def getReward(self):
         terminal = np.all(self.next_state==0)
         if terminal == True:
             reward = 100
@@ -243,9 +243,9 @@ class ToricCodeEnv(gym.Env):
                 self.current_state = np.stack((vertex_matrix, plaquette_matrix), axis=0)
             elif state == 'next_state':
                 self.next_state = np.stack((vertex_matrix, plaquette_matrix), axis=0)
-    # Not important now
+    
 
-    def plot_toric_code(self, state, title):
+    def plotToricCode(self, state, title):
         x_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 1)
         y_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 2)
         z_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 3)
