@@ -91,16 +91,22 @@ class ToricCode(gym.Env):
         =============
         numpy array with corresponing syndrom for the errors.
         """
-        terminal_state = self.isTerminalState(self.state)
 
-        qubit_matrix = np.zeros((2, self.system_size, self.system_size), dtype=int)
+        
+        self.plaquette_matrix   = np.zeros((self.system_size, self.system_size), dtype=int)   # dont use self.plaquette
+        self.vertex_matrix      = np.zeros((self.system_size, self.system_size), dtype=int)      # dont use self.vertex 
+        self.qubit_matrix       = np.zeros((2, self.system_size, self.system_size), dtype=int)
+        self.state              = np.stack((self.vertex_matrix, self.plaquette_matrix,), axis=0)
+        self.next_state         = np.stack((self.vertex_matrix, self.plaquette_matrix), axis=0)
+
+        terminal_state = self.isTerminalState(self.state)
 
         # Generate new errors
         while terminal_state:
             if self.min_qbit_errors == 0:
-                qubit_matrix = self.generateRandomError(qubit_matrix, self.p_error)
+                qubit_matrix = self.generateRandomError(self.qubit_matrix, self.p_error)
             else:
-                qubit_matrix = self.generateNRandomErrors(qubit_matrix, self.min_qbit_errors)
+                qubit_matrix = self.generateNRandomErrors(self.qubit_matrix, self.min_qbit_errors)
             
             terminal_state = self.isTerminalState(qubit_matrix)
 
