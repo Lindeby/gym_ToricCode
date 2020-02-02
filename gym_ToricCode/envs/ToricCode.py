@@ -37,7 +37,7 @@ class ToricCode(gym.Env):
         self.p_error = config["p_error"] if "p_error" in config else 0.1
 
         low = np.array([0,0,0,0])
-        high = np.array([1, self.system_size,self.system_size, 4])
+        high = np.array([1, self.system_size, self.system_size, 3])
         self.action_space       = gym.spaces.Box(low, high)#gym.spaces.Tuple([gym.spaces.Box(np.array([0,0,0]), np.array([1, self.system_size, self.system_size])), gym.spaces.Discrete(4)])
         self.observation_space  = gym.spaces.Box(0, 1, [2, self.system_size, self.system_size])
 
