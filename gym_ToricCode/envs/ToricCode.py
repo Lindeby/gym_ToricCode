@@ -92,13 +92,14 @@ class ToricCode(gym.Env):
         numpy array with corresponing syndrom for the errors.
         """
 
-        
+        self.ground_state = True
+
         self.plaquette_matrix   = np.zeros((self.system_size, self.system_size), dtype=int)   # dont use self.plaquette
         self.vertex_matrix      = np.zeros((self.system_size, self.system_size), dtype=int)      # dont use self.vertex 
         self.qubit_matrix       = np.zeros((2, self.system_size, self.system_size), dtype=int)
         self.state              = np.stack((self.vertex_matrix, self.plaquette_matrix,), axis=0)
         self.next_state         = np.stack((self.vertex_matrix, self.plaquette_matrix), axis=0)
-
+        
         terminal_state = self.isTerminalState(self.state)
 
         # Generate new errors
@@ -338,6 +339,57 @@ class ToricCode(gym.Env):
         plt.axis('equal')
         plt.savefig('plots/graph_'+str(title)+'.png')
         plt.close()
+
+
+    def evalGroundState(self):
+        """ Evaluates ground state of the toric code. Can only
+        distinguish non trivial and trivial loop. Categorization
+        what kind of non trivial loop does not work.
+        
+        Note: Function works only for odd grid dimensions! 3x3, 5x5, 7x7   
+
+        Return
+        ======
+        (Bool) True if there are trivial loops, False for non-trivial loops.
+        """
+
+        def split_qubit_matrix_in_x_and_z():
+        # loops vertex space qubit matrix 0
+            z_matrix_0 = self.qubit_matrix[0,:,:]        
+            y_errors = (z_matrix_0 == 2).astype(int)
+            z_errors = (z_matrix_0 == 3).astype(int)
+            z_matrix_0 = y_errors + z_errors 
+            # loops vertex space qubit matrix 1
+            z_matrix_1 = self.qubit_matrix[1,:,:]        
+            y_errors = (z_matrix_1 == 2).astype(int)
+            z_errors = (z_matrix_1 == 3).astype(int)
+            z_matrix_1 = y_errors + z_errors
+            # loops plaquette space qubit matrix 0
+            x_matrix_0 = self.qubit_matrix[0,:,:]        
+            x_errors = (x_matrix_0 == 1).astype(int)
+            y_errors = (x_matrix_0 == 2).astype(int)
+            x_matrix_0 = x_errors + y_errors 
+            # loops plaquette space qubit matrix 1
+            x_matrix_1 = self.qubit_matrix[1,:,:]        
+            x_errors = (x_matrix_1 == 1).astype(int)
+            y_errors = (x_matrix_1 == 2).astype(int)
+            x_matrix_1 = x_errors + y_errors
+
+            return x_matrix_0, x_matrix_1, z_matrix_0, z_matrix_1
+
+        x_matrix_0, x_matrix_1, z_matrix_0, z_matrix_1 = split_qubit_matrix_in_x_and_z()
+        
+        loops_0 = np.sum(np.sum(x_matrix_0, axis=0))
+        loops_1 = np.sum(np.sum(x_matrix_1, axis=0))
+        
+        loops_2 = np.sum(np.sum(z_matrix_0, axis=0))
+        loops_3 = np.sum(np.sum(z_matrix_1, axis=0))
+
+        if loops_0%2 == 1 or loops_1%2 == 1:
+            self.ground_state = False
+        elif loops_2%2 == 1 or loops_3%2 == 1:
+            self.ground_state = False
+
 
     def render(self, mode='human'):
         pass
