@@ -390,6 +390,8 @@ class ToricCode(gym.Env):
         elif loops_2%2 == 1 or loops_3%2 == 1:
             self.ground_state = False
 
+        return self.ground_state
+
 
     def render(self, mode='human'):
         pass
