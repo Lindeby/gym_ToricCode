@@ -118,6 +118,11 @@ class ToricCode(gym.Env):
         #self.qubit_matrix = np.array([  [[0,0,0],[0,0,0],[0,0,0]],
         #                                [[0,0,0],[0,1,0],[0,1,0]]
         #                            ])
+        #self.qubit_matrix = np.array([  [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+        #                                [[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0]]
+        #                            ])
+        
+
         self.state = self.createSyndromOpt(self.qubit_matrix) # Create syndrom from errors
         return self.state
 
