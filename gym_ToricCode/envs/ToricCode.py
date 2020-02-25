@@ -80,7 +80,7 @@ class ToricCode(gym.Env):
         new_operator = self.rule_table[old_operator, add_operator]
         self.qubit_matrix[qubit_matrix, row, col] = new_operator   
 
-        self.next_state = self.createSyndromOpt(self.qubit_matrix) # THIS FUNCTION FILLS RAM during multiprocessing
+        self.next_state = self.createSyndromOpt(self.qubit_matrix)
         
         reward = self.getReward()
         self.state = self.next_state 
