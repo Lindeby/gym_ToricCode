@@ -103,27 +103,25 @@ class ToricCode(gym.Env):
         self.state              = np.stack((self.vertex_matrix, self.plaquette_matrix,), axis=0)
         self.next_state         = np.stack((self.vertex_matrix, self.plaquette_matrix), axis=0)
         
-        terminal_state = self.isTerminalState(self.state)
-
         # Generate new errors
-        while terminal_state:
+        while True:
             if self.min_qbit_errors == 0:
-                qubit_matrix = self.generateRandomError(self.qubit_matrix, self.p_error)
+                self.qubit_matrix = self.generateRandomError(self.qubit_matrix, self.p_error)
             else:
-                qubit_matrix = self.generateNRandomErrors(self.qubit_matrix, self.min_qbit_errors)
-            
-            terminal_state = self.isTerminalState(qubit_matrix)
+                self.qubit_matrix = self.generateNRandomErrors(self.qubit_matrix, self.min_qbit_errors)
 
-        self.qubit_matrix = qubit_matrix
-        #self.qubit_matrix = np.array([  [[0,0,0],[0,0,0],[0,0,0]],
-        #                                [[0,0,0],[0,1,0],[0,1,0]]
-        #                            ])
+            self.state = self.createSyndromOpt(self.qubit_matrix) # Create syndrom from errors
+            if not self.isTerminalState(self.state):
+                break
+
+
+        # self.qubit_matrix = np.array([[[0,0,0],[0,0,0],[0,0,0]],
+        #                               [[0,0,0],[0,1,0],[0,1,0]]
+        #                             ])
         #self.qubit_matrix = np.array([  [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
         #                                [[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0]]
         #                            ])
         
-
-        self.state = self.createSyndromOpt(self.qubit_matrix) # Create syndrom from errors
         return self.state
 
 
@@ -139,14 +137,14 @@ class ToricCode(gym.Env):
         =============
         The input matrix with newly generated errors.
         """
-        for i in range(2):
-            qubits = np.random.uniform(0, 1, size=(matrix.shape[1], matrix.shape[2]))
-            error = qubits > p_error
-            no_error = qubits < p_error
-            qubits[error] = 0
-            qubits[no_error] = 1
-            pauli_error = np.random.randint(3, size=(matrix.shape[1], matrix.shape[2])) + 1
-            matrix[i,:,:] = np.multiply(qubits, pauli_error)
+
+        qubits = np.random.uniform(0, 1, size=(2, matrix.shape[1], matrix.shape[2]))
+        error = qubits > p_error
+        no_error = qubits < p_error
+        qubits[error] = 0
+        qubits[no_error] = 1
+        pauli_error = np.random.randint(3, size=(2, matrix.shape[1], matrix.shape[2])) + 1
+        matrix = np.multiply(qubits, pauli_error)
 
         return matrix
     
