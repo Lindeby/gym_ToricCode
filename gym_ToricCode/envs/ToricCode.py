@@ -146,7 +146,7 @@ class ToricCode(gym.Env):
         pauli_error = np.random.randint(3, size=(2, matrix.shape[1], matrix.shape[2])) + 1
         matrix = np.multiply(qubits, pauli_error)
 
-        return matrix
+        return matrix.astype(np.int)
     
     def generateNRandomErrors(self, matrix, n):
         """Generates n errors.
