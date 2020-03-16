@@ -87,13 +87,15 @@ class ToricCode(gym.Env):
 
         return self.state, reward, self.isTerminalState(self.state), {} 
        
-    def reset(self):
+    def reset(self, p_error=None):
         """Resets the environment and generates new errors.
 
         Returns
         =============
         numpy array with corresponing syndrom for the errors.
         """
+        if not p_error is None:
+            self.p_error = p_error
 
         self.ground_state = True
 
