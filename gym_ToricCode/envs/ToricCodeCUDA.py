@@ -106,13 +106,15 @@ class ToricCodeCUDA(gym.Env):
 
         self.plaquette_matrix   = torch.zeros((self.system_size, self.system_size), dtype=torch.int8, device=self.device)
         self.vertex_matrix      = torch.zeros((self.system_size, self.system_size), dtype=torch.int8, device=self.device)
-        # self.state              = torch.stack((self.vertex_matrix, self.plaquette_matrix), dim=0)
         self.next_state         = torch.stack((self.vertex_matrix, self.plaquette_matrix), dim=0)
         
+        # generate new errors
+        while True:
+            self.qubit_matrix = self.generateRandomError(self.p_error)
+            self.state = self.createSyndromOpt(self.qubit_matrix)       # Create syndrom from errors
+            if not self.isTerminalState(self.state):
+                break
 
-        # TODO: Cant guarante that the new state will contain errors
-        self.qubit_matrix = self.generateRandomError(self.p_error)
-        terminal = self.isTerminalState(self.state)
 
         # Debugging
         # self.qubit_matrix = torch.Tensor([  [[0,0,0],[0,0,0],[0,0,0]],
@@ -122,8 +124,6 @@ class ToricCodeCUDA(gym.Env):
         #                                [[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0]]
         #                            ])
         
-
-        self.state = self.createSyndromOpt(self.qubit_matrix) # Create syndrom from errors
         return self.state
 
 
@@ -152,14 +152,7 @@ class ToricCodeCUDA(gym.Env):
 
         return - the error matrix
         """ 
-        pass
-        # errors = np.random.randint(3, size = n) + 1
-        # qubit_matrix_error = np.zeros(2*matrix.shape[1]**2)
-        # qubit_matrix_error[:n] = errors
-        # np.random.shuffle(qubit_matrix_error)
-        # matrix[:,:,:] = qubit_matrix_error.reshape(2, matrix.shape[1], matrix.shape[2])
-
-        # return matrix
+        raise NotImplementedError("generateNRandomErrors() is not implemented for CUDA.")
 
     def createSyndromOpt(self, tcode):
         """Generates the syndrom from the given qubit matrix.
