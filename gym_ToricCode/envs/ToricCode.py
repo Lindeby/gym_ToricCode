@@ -36,7 +36,7 @@ class ToricCode(gym.Env):
         """
 
         self.system_size = config["size"] if "size" in config else 3
-        self.min_qbit_errors = config["min_qbit_errors"] if "min_qbit_errors" in config else 0
+        #self.min_qbit_errors = config["min_qbit_errors"] if "min_qbit_errors" in config else 0
         self.p_error = config["p_error"] if "p_error" in config else 0.1
 
         low = np.array([0,0,0,0])
@@ -107,10 +107,7 @@ class ToricCode(gym.Env):
         
         # Generate new errors
         while True:
-            if self.min_qbit_errors == 0:
-                self.qubit_matrix = self.generateRandomError(self.qubit_matrix, self.p_error)
-            else:
-                self.qubit_matrix = self.generateNRandomErrors(self.qubit_matrix, self.min_qbit_errors)
+            self.qubit_matrix = self.generateRandomError(self.qubit_matrix, self.p_error)
 
             self.state = self.createSyndromOpt(self.qubit_matrix) # Create syndrom from errors
             if not self.isTerminalState(self.state):
@@ -150,20 +147,6 @@ class ToricCode(gym.Env):
 
         return matrix.astype(np.int)
     
-    def generateNRandomErrors(self, matrix, n):
-        """Generates n errors.
-        np matrix - a (2,x,x) numpy matrix the to generate errors on.
-        int n - the number of generated errors.
-
-        return - the error matrix
-        """ 
-        errors = np.random.randint(3, size = n) + 1
-        qubit_matrix_error = np.zeros(2*matrix.shape[1]**2)
-        qubit_matrix_error[:n] = errors
-        np.random.shuffle(qubit_matrix_error)
-        matrix[:,:,:] = qubit_matrix_error.reshape(2, matrix.shape[1], matrix.shape[2])
-
-        return matrix
 
     def createSyndromOpt(self, tcode):
         """Generates the syndrom from the given qubit matrix.
