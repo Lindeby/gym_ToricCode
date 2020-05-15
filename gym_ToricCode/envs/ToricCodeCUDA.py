@@ -7,17 +7,9 @@ import matplotlib.pyplot as plt
 import time, sys
 
 class ToricCodeCUDA(gym.Env):
-    """
-    Description:
+    """ An attempt to implement the Toric Code using tensors.
 
-    Observation:
-
-    Actions:
-        the actions avaliable shuld be x, y and z operation on all
-        position of the matrix
-    Reward:
-
-    Episode Termination:
+    WARNING: Does not work
 
     """
 
