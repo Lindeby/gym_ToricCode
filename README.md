@@ -1,2 +1,1 @@
-Followed this example: https://github.com/openai/gym/blob/master/docs/creating-environments.md
-
+## Python implementation of the Toric Code. Used in Master Thesis #TODO
