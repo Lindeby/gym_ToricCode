@@ -2,22 +2,9 @@ import gym
 import numpy as np
 import matplotlib.pyplot as plt
 
-# debug
-import time, sys
 
 class ToricCode(gym.Env):
-    """
-    Description:
-
-    Observation:
-
-    Actions:
-        the actions avaliable shuld be x, y and z operation on all
-        position of the matrix
-    Reward:
-
-    Episode Termination:
-
+    """ Toric Code with periodic boundaries.
     """
 
     metadata = {'render.modes': ['human']}
@@ -26,35 +13,34 @@ class ToricCode(gym.Env):
         """ Init method
 
         Parameters
-        =============
-        config: a dictionary containing configuration parmeters
-        config {
-            size: An integer describing the size of the toric code.
-            min_qbit_errors: An integer describing the minium number of qubit errors on the code. 
-            p_error: The probability of generating an error on the toric code. 
+        ==========
+        config: (dict) {
+            size:      (int)   size of the grid. Only odd numbers.
+            p_error:   (float) the probability of generating an error on each qubits location. 
         }
         """
 
-        self.system_size = config["size"] if "size" in config else 3
-        #self.min_qbit_errors = config["min_qbit_errors"] if "min_qbit_errors" in config else 0
-        self.p_error = config["p_error"] if "p_error" in config else 0.1
+        self.system_size = config["size"]    if "size"    in config else 3      # Defaults to 3
+        self.p_error     = config["p_error"] if "p_error" in config else 0.1    # Defaults to 0.1
 
+        # Limits on observation and action space. All gym envs has these two defined.
         low = np.array([0,0,0,0])
         high = np.array([1, self.system_size, self.system_size, 3])
         self.action_space       = gym.spaces.Box(low, high)
         self.observation_space  = gym.spaces.Box(0, 1, [2, self.system_size, self.system_size])
 
-        # plaquette_matrix and vertex_matrix combinded beckomes the state
+        # plaquette_matrix and vertex_matrix combinded becomes the state
         # that is avaliable for the agent
-        self.plaquette_matrix   = np.zeros((self.system_size, self.system_size), dtype=int)   
-        self.vertex_matrix      = np.zeros((self.system_size, self.system_size), dtype=int) 
+        self._plaquette_matrix   = np.zeros((self.system_size, self.system_size), dtype=int)   
+        self._vertex_matrix      = np.zeros((self.system_size, self.system_size), dtype=int) 
 
         # qubit_matrix contains the true errors and shuld not be avaliable for for an agent
         self.qubit_matrix       = np.zeros((2, self.system_size, self.system_size), dtype=int)
-        self.state              = np.stack((self.vertex_matrix, self.plaquette_matrix,), axis=0)
-        self.next_state         = np.stack((self.vertex_matrix, self.plaquette_matrix), axis=0)
+        self.state              = np.stack((self._vertex_matrix, self._plaquette_matrix,), axis=0)
+        self.next_state         = np.stack((self._vertex_matrix, self._plaquette_matrix), axis=0)
 
-        self.rule_table = np.array(([[0,1,2,3],[1,0,3,2],[2,3,0,1],[3,2,1,0]]), dtype=int)  # Identity = 0, pauli_x = 1, pauli_y = 2, pauli_z = 3
+        # Identity = 0, pauli_x = 1, pauli_y = 2, pauli_z = 3
+        self.rule_table = np.array(([[0,1,2,3],[1,0,3,2],[2,3,0,1],[3,2,1,0]]), dtype=int)  
 
         self.ground_state = True    # True: only trivial loops, False: non trivial loop 
 
@@ -63,22 +49,22 @@ class ToricCode(gym.Env):
         """ Applies a pauli operator to the toric grid.
 
         Parameters
-        =============
-        action: numpy array [matrix, posx, posy, operator] 
+        ==========
+        action: (np.array) vector containing the following 4 values: [matrix, posx, posy, operator] 
         
         Returns
-        =============
-        numpy array with corresponing syndrom for the errors.
+        =======
+        (np.array) corresponing syndrome for the underlying error.
         """
 
-        qubit_matrix = action[0]
+        qubit_matrix = action[0] 
         row = action[1]
         col = action[2]
         add_operator = action[3]
 
         old_operator = self.qubit_matrix[qubit_matrix, row, col]
         new_operator = self.rule_table[old_operator, add_operator]
-        self.qubit_matrix[qubit_matrix, row, col] = new_operator   
+        self.qubit_matrix[qubit_matrix, row, col] = new_operator    # apply operator
 
         self.next_state = self.createSyndromOpt(self.qubit_matrix)
         
@@ -90,8 +76,13 @@ class ToricCode(gym.Env):
     def reset(self, p_error=None):
         """Resets the environment and generates new errors.
 
+        Parameters
+        ==========
+        p_error: (float) (OPTIONAL) if provided, the new syndrome update the current
+                                    p_error with the new value.
+
         Returns
-        =============
+        =======
         numpy array with corresponing syndrom for the errors.
         """
         if not p_error is None:
@@ -99,31 +90,22 @@ class ToricCode(gym.Env):
 
         self.ground_state = True
 
-        self.plaquette_matrix   = np.zeros((self.system_size, self.system_size), dtype=int)   # dont use self.plaquette
-        self.vertex_matrix      = np.zeros((self.system_size, self.system_size), dtype=int)      # dont use self.vertex 
+        self._plaquette_matrix  = np.zeros((self.system_size, self.system_size), dtype=int)
+        self._vertex_matrix     = np.zeros((self.system_size, self.system_size), dtype=int) 
         self.qubit_matrix       = np.zeros((2, self.system_size, self.system_size), dtype=int)
-        self.state              = np.stack((self.vertex_matrix, self.plaquette_matrix,), axis=0)
-        self.next_state         = np.stack((self.vertex_matrix, self.plaquette_matrix), axis=0)
+        self.state              = np.stack((self._vertex_matrix, self._plaquette_matrix,), axis=0)
+        self.next_state         = np.stack((self._vertex_matrix, self._plaquette_matrix), axis=0)
         
-        # Generate new errors
+        # Generate new errors, without the loop there is a (small) chance that self.generateRandomError
+        # returns no errors. Should that happen, we generate errors again. Should not be a performance issue
+        # since its extremely rare that there are more than 2 iterations here.
         while True:
-            self.qubit_matrix = self.generateRandomError(self.qubit_matrix, self.p_error)
+            self.qubit_matrix = self.generateRandomError(self.qubit_matrix, self.p_error)  # create errors
 
-            self.state = self.createSyndromOpt(self.qubit_matrix) # Create syndrom from errors
-            if not self.isTerminalState(self.state):
+            self.state = self.createSyndromOpt(self.qubit_matrix) # create syndrome from errors
+            if not self.isTerminalState(self.state): # safeguard so that there actually are errors in the syndrome
                 break
 
-
-        # self.qubit_matrix = np.array([[[0,0,0],[0,0,0],[0,0,0]],
-        #                               [[0,0,0],[0,1,0],[0,1,0]]
-        #                             ])
-        #self.qubit_matrix = np.array([  [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
-        #                                [[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0]]
-        #                            ])
-        # self.qubit_matrix = np.array([  [[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0],[0,0,1,1,1,0,0,0,0],[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0]],
-                    # [[0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0], [0,0,0,0,1,0,0,0,0], [0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0]]
-                # ])
-        # self.state = self.createSyndromOpt(self.qubit_matrix)
         return self.state
 
 
@@ -131,20 +113,20 @@ class ToricCode(gym.Env):
         """Generates errors with a probability.
 
         Parameters
-        =============
-        matrix: (2,n,n) numpy matrix the to generate errors on.
-        p_error: the probability to generate an error.
+        ==========
+        matrix:  (np.array) 2d numpy array to generate errors on.
+        p_error: (float)    the probability to generate an error.
         
-        Return
-        =============
-        The input matrix with newly generated errors.
+        Returns
+        =======
+        (np.array) the input matrix with newly generated errors.
         """
 
         qubits = np.random.uniform(0, 1, size=(2, matrix.shape[1], matrix.shape[2]))
-        error = qubits > p_error
-        no_error = qubits < p_error
-        qubits[error] = 0
-        qubits[no_error] = 1
+        no_error = qubits > p_error
+        error = p_error > qubits
+        qubits[no_error] = 0
+        qubits[error] = 1
         pauli_error = np.random.randint(3, size=(2, matrix.shape[1], matrix.shape[2])) + 1
         matrix = np.multiply(qubits, pauli_error)
 
@@ -153,13 +135,21 @@ class ToricCode(gym.Env):
 
     def createSyndromOpt(self, tcode):
         """Generates the syndrom from the given qubit matrix.
-        tcode - the qubit matrix containing the errors.
 
-        return - a matrix with syndroms to corresponding input matrix.
+        Parameters
+        ==========
+        tcode: (np.array) the qubit matrix containing the errors.
+
+        Returns
+        =======
+        (np.array) a matrix with syndroms to corresponding input matrix.
         """
+        # separate errors
         x_errors = np.where(tcode == 1, 1, 0)
-        y_errors = np.where(tcode == 2, 1, 0)   # separate y and z errors from x 
+        y_errors = np.where(tcode == 2, 1, 0)    
         z_errors = np.where(tcode == 3, 1, 0)
+
+        # QUANTUM PHYSICS
 
         # generate vertex excitations (charge)
         # can be generated by z and y errors 
@@ -188,11 +178,23 @@ class ToricCode(gym.Env):
     def isTerminalState(self, state):
         """Evaluates if a state is terminal.
 
-        return - Boolean: True if terminal state, False otherwise
+        Parameters
+        ==========
+        state: (np.array) the state to evaluate.
+
+        Returns
+        =======
+        (bool) True if terminal state, False otherwise
         """
         return np.all(state==0)
 
     def getReward(self):
+        """Compute the reward after taking an action.
+
+        Returns
+        =======
+        (int) the reward value
+        """
         terminal = np.all(self.next_state==0)
         if terminal == True:
             reward = 100
@@ -204,6 +206,16 @@ class ToricCode(gym.Env):
         return reward
 
     def plotToricCode(self, state, title):
+        """ Plots the state.
+
+        Parameters
+        ==========
+        state: (np.array) the state to be plotted. This parameter can probably be removed
+                            and instead call self.createSyndromeOpt to get the state.
+        title: (String)   the title of the filename. The plot is saved to the plots/ dir
+                            and will be named 'graph_(title).png'
+
+        """
         x_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 1)
         y_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 2)
         z_error_qubits1 = np.where(self.qubit_matrix[0,:,:] == 3)
@@ -273,11 +285,12 @@ class ToricCode(gym.Env):
 
 
     def evalGroundState(self):
-        """ Evaluates ground state of the toric code. Can only
-        distinguish non trivial and trivial loop. Categorization
-        what kind of non trivial loop does not work.
+        """ Evaluates ground state of the toric code. Can only distinguish non
+        trivial and trivial loop. Categorization what kind of non trivial loop does not work.
         
-        Note: Function works only for odd grid dimensions! 3x3, 5x5, 7x7   
+        Note: Function works only for odd grid dimensions! 3x3, 5x5, 7x7, ...
+
+        WARNING: unless the current state is a terminal state, the return is undefined.
 
         Return
         ======
@@ -323,8 +336,10 @@ class ToricCode(gym.Env):
         return self.ground_state
 
 
+    # Default method for gym env
     def render(self, mode='human'):
         pass
 
+    # Default method for gym env
     def close(self):
         pass
